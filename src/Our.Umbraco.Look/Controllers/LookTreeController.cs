@@ -6,6 +6,7 @@ using System.Web;
 using Umbraco.Core;
 using Umbraco.Web.Models.Trees;
 using Umbraco.Web.Trees;
+using System.Linq;
 
 namespace Our.Umbraco.Look.Controllers
 {
@@ -31,7 +32,16 @@ namespace Our.Umbraco.Look.Controllers
 
                         if (baseSearchProvider != null)
                         {
-                            tree.Add(this.CreateTreeNode("searchProvider=" + baseSearchProvider.Name, id, queryStrings, baseSearchProvider.Name, "icon-files", true));
+                            // if searcher has any items with tags
+                            var hasTaggedItems = 
+                                new LookQuery(baseSearchProvider.Name)
+                                {
+                                    RawQuery = "+" + LookConstants.HasTagsField + ":" + Boolean.TrueString.ToLower()
+                                }
+                                .Query()
+                                .TotalItemCount > 0;
+
+                            tree.Add(this.CreateTreeNode("searchProvider-" + baseSearchProvider.Name, id, queryStrings, baseSearchProvider.Name, "icon-files", hasTaggedItems));
                         }
                     }
 
@@ -39,31 +49,33 @@ namespace Our.Umbraco.Look.Controllers
 
                 case LookTreeNodeType.SearchProvider:
 
-                    // get all tag groups in this index
-                    var lookQuery = new LookQuery(node.SearchProvider);
+                    var tagGroups = new LookQuery(node.SearchProvider) { RawQuery = "+" + LookConstants.HasTagsField + ":" + Boolean.TrueString.ToLower() }
+                                        .Query()
+                                        .Matches
+                                        .SelectMany(x => x.Tags.Select(y => y.Group))
+                                        .Distinct();
 
-                    //lookQuery.RawQuery = "+" + LookConstants.HasTagsField + ":" + Boolean.TrueString.ToLower(); // raw query is analyzed - case changed
-
-
-
-                    var lookResult = lookQuery.Query();
-
-                    foreach(var march in lookResult.Matches)
+                    foreach(var tagGroup in tagGroups)
                     {
-
+                        tree.Add(this.CreateTreeNode(id + "-tagGroup-" + tagGroup, id, queryStrings, tagGroup != "" ? tagGroup : "Default", "icon-tags", true));
                     }
                     
-
-
-                    //tree.Add(this.CreateTreeNode(id + "-", id, queryStrings, index.Name, "icon-truck", true));
-
-
                     break;
 
                 case LookTreeNodeType.TagGroup:
-                    break;
 
-                case LookTreeNodeType.Tag:
+                    var tags = new LookQuery(node.SearchProvider) { RawQuery = "+" + LookConstants.HasTagsField + ":" + Boolean.TrueString.ToLower() }
+                                        .Query()
+                                        .Matches
+                                        .SelectMany(x => x.Tags.Where(y => y.Group == node.TagGroup))
+                                        .Select(x => x.Name)
+                                        .Distinct();
+
+                    foreach (var tag in tags)
+                    {
+                        tree.Add(this.CreateTreeNode(id + "-tag-" + tag, id, queryStrings, tag, "icon-tag", false));
+                    }
+
                     break;
             }
 
@@ -118,11 +130,22 @@ namespace Our.Umbraco.Look.Controllers
             {
                 if (id == "-1") { return; }
 
-                var parsedId = HttpUtility.ParseQueryString(id);
+                var chopped = id.Split('-');
 
-                this.SearchProvider = parsedId["searchProvider"];
-                this.TagGroup = parsedId["tagGroup"];
-                this.Tag = parsedId["tag"];
+                if (chopped.Length >= 2)
+                {
+                    this.SearchProvider = chopped[1];
+                }
+
+                if (chopped.Length >= 4)
+                {
+                    this.TagGroup = chopped[3];
+                }
+
+                if (chopped.Length >= 6)
+                {
+                    this.Tag = chopped[5];
+                }
             }
         }
 
