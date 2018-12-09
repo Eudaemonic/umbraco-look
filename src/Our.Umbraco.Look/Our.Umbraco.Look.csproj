@@ -207,6 +207,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Controllers\LookTreeController.cs" />
     <Compile Include="Events\Indexing.cs" />
     <Compile Include="Extensions\StringExtensions\LuceneStringToDate.cs" />
     <Compile Include="Extensions\DateTimeExtensions\DateToLuceneString.cs" />
