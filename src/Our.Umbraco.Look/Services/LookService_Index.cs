@@ -169,6 +169,12 @@ namespace Our.Umbraco.Look
                 {
                     foreach (var tag in tags)
                     {
+                        var hasTagsField = new Field(
+                            LookConstants.HasTagsField,
+                            Boolean.TrueString.ToLower(),
+                            Field.Store.NO,
+                            Field.Index.NOT_ANALYZED);
+
                         // add all tags to a common field (serialized such that Tag objects can be restored from this)
                         var allTagsField = new Field(
                                             LookConstants.AllTagsField,
@@ -183,6 +189,7 @@ namespace Our.Umbraco.Look
                                             Field.Store.YES,
                                             Field.Index.NOT_ANALYZED);
 
+                        document.Add(hasTagsField);
                         document.Add(allTagsField);
                         document.Add(tagField);
                     }
@@ -206,7 +213,7 @@ namespace Our.Umbraco.Look
                 {
                     var hasLocationField = new Field(
                                                 LookConstants.HasLocationField,
-                                                Boolean.TrueString,
+                                                Boolean.TrueString.ToLower(),
                                                 Field.Store.NO,
                                                 Field.Index.NOT_ANALYZED);
 

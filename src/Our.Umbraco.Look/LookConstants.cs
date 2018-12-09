@@ -28,6 +28,11 @@
         internal static string TextField => "Look_Text";
 
         /// <summary>
+        /// 
+        /// </summary>
+        internal static string HasTagsField => "Look_HasTags";
+
+        /// <summary>
         /// Single field used to store 'group & name' for each tag, so can get all tags without first testing for field names prefixed with x / maintaining a memory state cache
         /// </summary>
         internal static string AllTagsField => "Look_AllTags";
