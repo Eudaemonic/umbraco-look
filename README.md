@@ -19,20 +19,23 @@ If a function is set and returns a value then custom Lucene field(s) prefixed wi
 The static properties definitions on LookConfiguration where indexing functions can be set:
 
 ```csharp
-// creates case sensitive and case insensitive fields (not analyzed) - for use with NameQuery
-Func<IndexingContext, string> NameIndexer { set; }
+public static class LookConfiguration
+{
+	// creates case sensitive and case insensitive fields (not analyzed) - for use with NameQuery
+	public static Func<IndexingContext, string> NameIndexer { set; }
 
-// creates a date & sorting fields - for use with DateQuery
-Func<IndexingContext, DateTime?> DateIndexer { set; }
+	// creates a date & sorting fields - for use with DateQuery
+	public static Func<IndexingContext, DateTime?> DateIndexer { set; }
 
-// creates a text field (analyzed) - for use with TextQuery
-Func<IndexingContext, string> TextIndexer { set; }
+	// creates a text field (analyzed) - for use with TextQuery
+	public static Func<IndexingContext, string> TextIndexer { set; }
 
-// creates a tag field for each tag group - for use with TagQuery
-Func<IndexingContext, LookTag[]> TagIndexer { set; }
+	// creates a tag field for each tag group - for use with TagQuery
+	public static Func<IndexingContext, LookTag[]> TagIndexer { set; }
 
-// creates multple fields - for use with LocationQuery
-Func<IndexingContext, Location> LocationIndexer { set; }
+	// creates multple fields - for use with LocationQuery
+	public static Func<IndexingContext, Location> LocationIndexer { set; }
+}
 ```
 
 The model supplied to the indexing functions:
@@ -252,25 +255,22 @@ If not specified then the reults will be sorted on the Lucene score, otherwise s
 
 ### Search Results
 
-The search can be performed by calling the static Query method on the LookService:
+The search can be performed by calling the static Query method on the LookService, passing in the LookQuery model:
 
 ```csharp
-var lookResult = LookService.Query(lookQuery); // returns Our.Umbraco.Look.Model.LookResult (which implements Examine ISearchResults).
+var lookResult = LookService.Query(lookQuery);
 ```
 
-or by using the shortcut helper method on the LookQuery:
+or by using the shortcut helper method on the LookQuery model (which does the same as above):
 
 ```csharp
 var lookResult = lookQuery.Query();
 ```
 
-The results:
+When the query is performed, the source LookQuery model is compiled, such that it can be useful to hold onto a reference for any subsequent paging queries. The 
+LookResult model returned implements Examine.ISearchResults so that it can be integrated into existing site architecture, whilst the Matches property will
+return the results enumerable as strongly typed LookMatch objects.
 
-```csharp
-var totalResults = lookResult.TotalItemCount; // total number of item expected in the lookResult enumerable
-var results = lookResult.ToArray(); // enumerates to return Our.Umbraco.Look.Models.LookMatch[]
-var facets = lookResult.Facets; // returns Our.Umbraco.Look.Models.Facet[]
-```
 
 ```csharp
 public class LookResult : ISearchResults
@@ -281,9 +281,14 @@ public class LookResult : ISearchResults
 	public bool Success { get; }
 	
 	/// <summary>
-	/// Expected total number of results expected in the enumerable of LookMatch results
+	/// Expected total number of results expected in the result enumerable
 	/// </summary>
 	public int TotalItemCount { get; }
+
+	/// <summary>
+	/// Get the results enumerable as LookMatch objects
+	/// </summary>
+	public IEnumerable<LookMatch> Matches { get; }
 
 	/// <summary>
 	/// Any returned facets
